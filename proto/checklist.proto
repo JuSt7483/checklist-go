@@ -1,0 +1,56 @@
+syntax = "proto3";
+
+package checklist;
+
+option go_package = "checklist-go/proto;pb";
+
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/empty.proto";
+
+// Сервис для работы с чеклистом
+service ChecklistService {
+  // Создает новую задачу
+  rpc CreateTask(CreateTaskRequest) returns (CreateTaskResponse);
+  // Возвращает список всех задач
+  rpc ListTasks(ListTasksRequest) returns (ListTasksResponse);
+  // Удаляет задачу по ID
+  rpc DeleteTask(DeleteTaskRequest) returns (google.protobuf.Empty);
+  // Отмечает задачу как выполненную
+  rpc CompleteTask(CompleteTaskRequest) returns (google.protobuf.Empty);
+}
+
+message Task {
+  string id = 1;
+  string title = 2;
+  string description = 3;
+  bool completed = 4;
+  google.protobuf.Timestamp created_at = 5;
+  google.protobuf.Timestamp updated_at = 6;
+}
+
+// --- CreateTask ---
+message CreateTaskRequest {
+  string title = 1;
+  string description = 2;
+}
+
+message CreateTaskResponse {
+  Task task = 1;
+}
+
+// --- ListTasks ---
+message ListTasksRequest {}
+
+message ListTasksResponse {
+  repeated Task tasks = 1;
+}
+
+// --- DeleteTask ---
+message DeleteTaskRequest {
+  string id = 1;
+}
+
+// --- CompleteTask ---
+message CompleteTaskRequest {
+  string id = 1;
+}
