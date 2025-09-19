@@ -4,14 +4,13 @@
 // - protoc             v5.29.3
 // source: proto/checklist.proto
 
-package pb
+package proto
 
 import (
 	context "context"
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
-	emptypb "google.golang.org/protobuf/types/known/emptypb"
 )
 
 // This is a compile-time assertion to ensure that this generated file
@@ -20,26 +19,24 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	ChecklistService_CreateTask_FullMethodName   = "/checklist.ChecklistService/CreateTask"
-	ChecklistService_ListTasks_FullMethodName    = "/checklist.ChecklistService/ListTasks"
-	ChecklistService_DeleteTask_FullMethodName   = "/checklist.ChecklistService/DeleteTask"
-	ChecklistService_CompleteTask_FullMethodName = "/checklist.ChecklistService/CompleteTask"
+	ChecklistService_CreateTask_FullMethodName   = "/proto.ChecklistService/CreateTask"
+	ChecklistService_ListTasks_FullMethodName    = "/proto.ChecklistService/ListTasks"
+	ChecklistService_DeleteTask_FullMethodName   = "/proto.ChecklistService/DeleteTask"
+	ChecklistService_MarkTaskDone_FullMethodName = "/proto.ChecklistService/MarkTaskDone"
 )
 
 // ChecklistServiceClient is the client API for ChecklistService service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
-//
-// Сервис для работы с чеклистом
 type ChecklistServiceClient interface {
-	// Создает новую задачу
-	CreateTask(ctx context.Context, in *CreateTaskRequest, opts ...grpc.CallOption) (*CreateTaskResponse, error)
-	// Возвращает список всех задач
+	// Для POST /create
+	CreateTask(ctx context.Context, in *CreateTaskRequest, opts ...grpc.CallOption) (*Task, error)
+	// Для GET /list
 	ListTasks(ctx context.Context, in *ListTasksRequest, opts ...grpc.CallOption) (*ListTasksResponse, error)
-	// Удаляет задачу по ID
-	DeleteTask(ctx context.Context, in *DeleteTaskRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
-	// Отмечает задачу как выполненную
-	CompleteTask(ctx context.Context, in *CompleteTaskRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
+	// Для DELETE /delete
+	DeleteTask(ctx context.Context, in *TaskActionRequest, opts ...grpc.CallOption) (*DeleteTaskResponse, error)
+	// Для PUT /done
+	MarkTaskDone(ctx context.Context, in *TaskActionRequest, opts ...grpc.CallOption) (*Task, error)
 }
 
 type checklistServiceClient struct {
@@ -50,9 +47,9 @@ func NewChecklistServiceClient(cc grpc.ClientConnInterface) ChecklistServiceClie
 	return &checklistServiceClient{cc}
 }
 
-func (c *checklistServiceClient) CreateTask(ctx context.Context, in *CreateTaskRequest, opts ...grpc.CallOption) (*CreateTaskResponse, error) {
+func (c *checklistServiceClient) CreateTask(ctx context.Context, in *CreateTaskRequest, opts ...grpc.CallOption) (*Task, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(CreateTaskResponse)
+	out := new(Task)
 	err := c.cc.Invoke(ctx, ChecklistService_CreateTask_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
@@ -70,9 +67,9 @@ func (c *checklistServiceClient) ListTasks(ctx context.Context, in *ListTasksReq
 	return out, nil
 }
 
-func (c *checklistServiceClient) DeleteTask(ctx context.Context, in *DeleteTaskRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+func (c *checklistServiceClient) DeleteTask(ctx context.Context, in *TaskActionRequest, opts ...grpc.CallOption) (*DeleteTaskResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(emptypb.Empty)
+	out := new(DeleteTaskResponse)
 	err := c.cc.Invoke(ctx, ChecklistService_DeleteTask_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
@@ -80,10 +77,10 @@ func (c *checklistServiceClient) DeleteTask(ctx context.Context, in *DeleteTaskR
 	return out, nil
 }
 
-func (c *checklistServiceClient) CompleteTask(ctx context.Context, in *CompleteTaskRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+func (c *checklistServiceClient) MarkTaskDone(ctx context.Context, in *TaskActionRequest, opts ...grpc.CallOption) (*Task, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(emptypb.Empty)
-	err := c.cc.Invoke(ctx, ChecklistService_CompleteTask_FullMethodName, in, out, cOpts...)
+	out := new(Task)
+	err := c.cc.Invoke(ctx, ChecklistService_MarkTaskDone_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -93,17 +90,15 @@ func (c *checklistServiceClient) CompleteTask(ctx context.Context, in *CompleteT
 // ChecklistServiceServer is the server API for ChecklistService service.
 // All implementations must embed UnimplementedChecklistServiceServer
 // for forward compatibility.
-//
-// Сервис для работы с чеклистом
 type ChecklistServiceServer interface {
-	// Создает новую задачу
-	CreateTask(context.Context, *CreateTaskRequest) (*CreateTaskResponse, error)
-	// Возвращает список всех задач
+	// Для POST /create
+	CreateTask(context.Context, *CreateTaskRequest) (*Task, error)
+	// Для GET /list
 	ListTasks(context.Context, *ListTasksRequest) (*ListTasksResponse, error)
-	// Удаляет задачу по ID
-	DeleteTask(context.Context, *DeleteTaskRequest) (*emptypb.Empty, error)
-	// Отмечает задачу как выполненную
-	CompleteTask(context.Context, *CompleteTaskRequest) (*emptypb.Empty, error)
+	// Для DELETE /delete
+	DeleteTask(context.Context, *TaskActionRequest) (*DeleteTaskResponse, error)
+	// Для PUT /done
+	MarkTaskDone(context.Context, *TaskActionRequest) (*Task, error)
 	mustEmbedUnimplementedChecklistServiceServer()
 }
 
@@ -114,17 +109,17 @@ type ChecklistServiceServer interface {
 // pointer dereference when methods are called.
 type UnimplementedChecklistServiceServer struct{}
 
-func (UnimplementedChecklistServiceServer) CreateTask(context.Context, *CreateTaskRequest) (*CreateTaskResponse, error) {
+func (UnimplementedChecklistServiceServer) CreateTask(context.Context, *CreateTaskRequest) (*Task, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CreateTask not implemented")
 }
 func (UnimplementedChecklistServiceServer) ListTasks(context.Context, *ListTasksRequest) (*ListTasksResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListTasks not implemented")
 }
-func (UnimplementedChecklistServiceServer) DeleteTask(context.Context, *DeleteTaskRequest) (*emptypb.Empty, error) {
+func (UnimplementedChecklistServiceServer) DeleteTask(context.Context, *TaskActionRequest) (*DeleteTaskResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DeleteTask not implemented")
 }
-func (UnimplementedChecklistServiceServer) CompleteTask(context.Context, *CompleteTaskRequest) (*emptypb.Empty, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method CompleteTask not implemented")
+func (UnimplementedChecklistServiceServer) MarkTaskDone(context.Context, *TaskActionRequest) (*Task, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method MarkTaskDone not implemented")
 }
 func (UnimplementedChecklistServiceServer) mustEmbedUnimplementedChecklistServiceServer() {}
 func (UnimplementedChecklistServiceServer) testEmbeddedByValue()                          {}
@@ -184,7 +179,7 @@ func _ChecklistService_ListTasks_Handler(srv interface{}, ctx context.Context, d
 }
 
 func _ChecklistService_DeleteTask_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(DeleteTaskRequest)
+	in := new(TaskActionRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -196,25 +191,25 @@ func _ChecklistService_DeleteTask_Handler(srv interface{}, ctx context.Context, 
 		FullMethod: ChecklistService_DeleteTask_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ChecklistServiceServer).DeleteTask(ctx, req.(*DeleteTaskRequest))
+		return srv.(ChecklistServiceServer).DeleteTask(ctx, req.(*TaskActionRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _ChecklistService_CompleteTask_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(CompleteTaskRequest)
+func _ChecklistService_MarkTaskDone_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(TaskActionRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(ChecklistServiceServer).CompleteTask(ctx, in)
+		return srv.(ChecklistServiceServer).MarkTaskDone(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: ChecklistService_CompleteTask_FullMethodName,
+		FullMethod: ChecklistService_MarkTaskDone_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ChecklistServiceServer).CompleteTask(ctx, req.(*CompleteTaskRequest))
+		return srv.(ChecklistServiceServer).MarkTaskDone(ctx, req.(*TaskActionRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -223,7 +218,7 @@ func _ChecklistService_CompleteTask_Handler(srv interface{}, ctx context.Context
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
 var ChecklistService_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "checklist.ChecklistService",
+	ServiceName: "proto.ChecklistService",
 	HandlerType: (*ChecklistServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
@@ -239,8 +234,8 @@ var ChecklistService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _ChecklistService_DeleteTask_Handler,
 		},
 		{
-			MethodName: "CompleteTask",
-			Handler:    _ChecklistService_CompleteTask_Handler,
+			MethodName: "MarkTaskDone",
+			Handler:    _ChecklistService_MarkTaskDone_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

@@ -1,18 +1,63 @@
-version: "3.8"
-
 services:
-  postgres:
-    image: postgres:15
-    container_name: checklist_postgres
-    restart: always
+  db:
+    image: postgres:16.3-alpine
+    container_name: checklist_db
     environment:
-      POSTGRES_USER: checklist_user
-      POSTGRES_PASSWORD: checklist_pass
       POSTGRES_DB: checklist_db
+      POSTGRES_USER: checklist_user
+      POSTGRES_PASSWORD: checklist_password
+      # Эта настройка нужна для совместимости с Go драйвером.
+      # Postgres 14+ использует метод scram-sha-256, который не все клиенты поддерживают.
+      # md5 - более старый, но надежный и широко поддерживаемый метод.
+      POSTGRES_HOST_AUTH_METHOD: md5
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    # Проверка, что база данных готова принимать подключения, прежде чем запускать другие сервисы.
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U checklist_user -d checklist_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  db-service:
+    container_name: checklist_db_service
+    build:
+      context: .
+      dockerfile: services/db-service/Dockerfile
+    # Эта команда - ключ к решению проблемы с миграциями.
+    # 1. `migrate ... up` - применяет миграции. Путь к файлам - /app/migrations,
+    #    а строка подключения указывает на сервис `db`.
+    # 2. `&&` - выполняет следующую команду только если миграции прошли успешно.
+    # 3. `/app/db-service` - запускает наше основное приложение.
+    command: sh -c "migrate -path /app/migrations -database postgres://checklist_user:checklist_password@db:5432/checklist_db?sslmode=disable up && /app/db-service"
+    restart: always
+    environment:
+      GRPC_PORT: 50051
+      # Передаем строку подключения в приложение через переменную окружения.
+      DB_DSN: "postgres://checklist_user:checklist_password@db:5432/checklist_db?sslmode=disable"
+    ports:
+      - "50051:50051"
+    # Запускаем этот сервис только после того, как база данных будет готова.
+    depends_on:
+      db:
+        condition: service_healthy
+
+  api-service:
+    container_name: checklist_api_service
+    build:
+      context: .
+      dockerfile: services/api-service/Dockerfile
+    restart: always
+    environment:
+      HTTP_PORT: 8080
+      GRPC_HOST: db-service
+      GRPC_PORT: 50051
+    ports:
+      - "8080:8080"
+    depends_on:
+      - db-service
 
 volumes:
   postgres_data:
